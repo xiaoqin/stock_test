@@ -11,7 +11,9 @@ def download_url(url):
     req = request.Request(url)
     req.add_header('User-Agent', 'Mozilla/5.0 (Mcintosh; Intel Mac OS X)')
     gcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
-
+    with request.urlopen(req, context=gcontext) as f:
+        data = f.read()
+    return data
 
 
 def main():
