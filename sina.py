@@ -10,18 +10,18 @@ import json
 import myurl
 import config
 
+default_start = '2017-12-10'
+default_end = time.strftime("%Y-%m-%d", time.localtime())
 data_dir = config.data_dir
+stock_url = 'http://vip.stock.finance.sina.com.cn/corp/go.php/vMS_FuQuanMarketHistory/stockid/%s.phtml'
+
+def get_year_and_jidu(date):
+    (year, month, day) = date.split('-')
+    jidu = (int(month) + 2) // 3
+    return (int(year), jidu)
 
 
-def get_hs300_stock_code():
-    return __get_hs3000_stock_code(download=False)
-
-
-def download_hs300_stock_code():
-    return __get_hs3000_stock_code(download=True)
-
-
-def __get_hs3000_stock_code(download=False):
+def get_hs300_stock_code(download=False):
     codes = []
     base_url = 'http://money.finance.sina.com.cn/d/api/openapi_proxy.php/?__s=%s&callback=%s'
     callback_arg = 'FDC_DC.theTableData'
@@ -57,33 +57,22 @@ def __get_hs3000_stock_code(download=False):
     return codes
 
 
-def download_stock_data(code, max_year=2):
-    return __get_stock_data(code, max_year, download=True)
+def get_stock_data(code, start=default_start, end=default_end, download=False):
+    (start_year, start_jidu) = get_year_and_jidu(start)
+    (end_year, end_jidu) = get_year_and_jidu(end)
+    start_time = time.strptime(start, '%Y-%m-%d')
+    end_time = time.strptime(end, '%Y-%m-%d')
 
-
-def get_stock_data(code, max_year=2):
-    return __get_stock_data(code, max_year, download=False)
-
-
-def __get_stock_data(code, max_year=2, download=False):
     df_all = pd.DataFrame()
-    base_url = 'http://vip.stock.finance.sina.com.cn/corp/go.php/vMS_FuQuanMarketHistory/stockid/%s.phtml'
-    base_url = base_url % code
-    doc = myurl.download_url(base_url)
-    soup = BeautifulSoup(doc, 'html.parser')
-    hist_date = soup.find('div', attrs={'id': 'con02-4'})
-    hist_year = hist_date.find('select', attrs={'name': 'year'})
-    years = hist_year.find_all('option')
-    if max_year > 0:
-        select_years = years[0:max_year]
-    else:
-        select_years = years
-    for y in select_years:
+    for year in range(end_year, start_year-1, -1):
         time.sleep(int(random.random() * 7) + 1)
         df_year = pd.DataFrame()
-        year = y.get_text()
         for jidu in (4, 3, 2, 1):
-            url = base_url + ('?year=%s&jidu=%d' % (year, jidu))
+            if year == end_year and jidu > end_jidu:
+                continue
+            if year == start_year and jidu < start_jidu:
+                continue
+            url = (stock_url % code) + ('?year=%d&jidu=%d' % (year, jidu))
             doc = myurl.download_url(url)
             soup = BeautifulSoup(doc, 'html.parser')
             table = soup.find('table', attrs={'id': 'FundHoldSharesTable'})
@@ -97,6 +86,9 @@ def __get_stock_data(code, max_year=2, download=False):
             for item in trs[2:]:
                 tds = item.find_all('td')
                 date = tds[0].get_text().strip()
+                localtime = time.strptime(date, '%Y-%m-%d')
+                if localtime > end_time or localtime < start_time:
+                    continue
                 index.append(date)
                 start_idx = 1
                 one_line = []
@@ -114,9 +106,10 @@ def __get_stock_data(code, max_year=2, download=False):
 
 
 def main():
-    hs300 = download_hs300_stock_code()
+    hs300 = get_hs300_stock_code()
     if hs300:
-        download_stock_data(hs300[0])
+        data = get_stock_data(hs300[0])
+        print(data)
 
 if __name__ == '__main__':
     main()

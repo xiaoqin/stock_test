@@ -10,15 +10,7 @@ import myurl
 data_dir = config.data_dir
 
 
-def download_all_stock_code():
-    return __get_all_stock_code(download=True)
-
-
-def get_all_stock_code():
-    return __get_all_stock_code()
-
-
-def __get_all_stock_code(download=False):
+def get_all_stock_code(download=False):
     codes = {}
     base_url = 'http://stock.finance.qq.com/sstock/view/show.php?t=qgqp&c=search_by_type&p=%d&type=%d'
     stock_types = {'sh': 1, 'sz': 2, 'zxb': 3, 'cyb': 4}
