@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 # -*-coding: utf-8 -*-
 
-from bs4 import BeautifulSoup
-import myurl
+import tencent
+import sina
 
 
 def main():
-    url = 'http://stock.qq.com/data/#qgqp'
-    doc = myurl.download_url(url)
-    print(doc)
+    tencent.download_all_stock_code()
+    # sina.download_hs300_code()
 
 if __name__ == '__main__':
     main()

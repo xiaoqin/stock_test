@@ -3,18 +3,22 @@
 
 from bs4 import BeautifulSoup
 import pandas as pd
+import os
 import time
 import random
 import json
 import myurl
+import config
+
+data_dir = config.data_dir
 
 
 def get_hs300_stock_code():
-    __get_hs3000_stock_code(download=False)
+    return __get_hs3000_stock_code(download=False)
 
 
 def download_hs300_stock_code():
-    __get_hs3000_stock_code(download=True)
+    return __get_hs3000_stock_code(download=True)
 
 
 def __get_hs3000_stock_code(download=False):
@@ -34,6 +38,7 @@ def __get_hs3000_stock_code(download=False):
         text = text.split('\n')[1]
         idx = text.find(callback_arg)
         if idx == -1:
+            print('download error:', url)
             break
         js_str = text[idx+len(callback_arg)+1:-1]
         data = json.loads(js_str)[0]
@@ -46,7 +51,7 @@ def __get_hs3000_stock_code(download=False):
         cur_page += 1
 
     if download:
-        with open('./hs300.txt', 'w') as f:
+        with open(os.path.join(data_dir, 'hs300.txt'), 'w') as f:
             f.write(json.dumps(codes))
 
     return codes
@@ -101,15 +106,17 @@ def __get_stock_data(code, max_year=2, download=False):
             df_jidu = pd.DataFrame(detail, columns=columns, index=index)
             df_year = df_year.append(df_jidu)
         df_all = df_all.append(df_year)
+
     if download:
-        df_all.to_csv('./%s' % code)
+        df_all.to_csv(os.path.join(data_dir, code))
+
     return df_all
 
 
 def main():
-    # hs300 = download_hs300_stock_code()
-    data = download_stock_data('600000')
-    print(data)
+    hs300 = download_hs300_stock_code()
+    if hs300:
+        download_stock_data(hs300[0])
 
 if __name__ == '__main__':
     main()
